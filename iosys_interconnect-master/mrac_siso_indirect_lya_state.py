@@ -1,8 +1,3 @@
-# mrac_siso_direct_mit_rule_statespace.py
-# Johannes Kaisinger, June 2023
-#
-# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018
-
 import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
@@ -11,8 +6,8 @@ plt.style.use('ggplot')
 import control as ct
 
 # linear system
-Ap = 1.
-Bp = 2.
+Ap = -1.
+Bp = 0.5
 Cp = 1.
 Dp = 0.
 
@@ -28,8 +23,8 @@ io_plant = ct.LinearIOSystem(
 )
 
 # linear system
-Am = -4.
-Bm = 4.
+Am = -2.
+Bm = 2.
 Cm = 1.
 Dm = 0.
 
@@ -49,7 +44,7 @@ l_star = Bm/Bp
 print(f'{k_star = }')
 print(f'{l_star = }')
 
-def adaptive_controller_state(_t, xc, uc, params):
+def adaptive_controller_state(_t, x_state, u_input, params):
     """Internal state of adpative controller, f(t,x,u;p)"""
     
     # parameters
@@ -63,15 +58,15 @@ def adaptive_controller_state(_t, xc, uc, params):
     #print(gam1, gam2, Am, Bm)
     
     # controller inputs
-    um = uc[0]
-    xp = uc[1]
-    xm = uc[2]
+    um = u_input[0]
+    xp = u_input[1]
+    xm = u_input[2]
     
     e1 = xm - xp
 
     # controller state
-    Ad = x1 = xc[0] # Ad
-    Bd = x2 = xc[1] # Bd
+    Ad = x1 = x_state[0] # Ad
+    Bd = x2 = x_state[1] # Bd
     
     # dynamics xd = f(x,u)
     d_x1 = - gam_a*e1*xp
@@ -95,7 +90,7 @@ def adaptive_controller_state(_t, xc, uc, params):
     
     return [d_x1, d_x2]
 
-def adaptive_controller_output(_t, xc, uc, params):
+def adaptive_controller_output(_t, x_state, u_input, params):
     """Algebraic output from adaptive controller, g(t,x,u;p)"""
     
     # parameters
@@ -103,13 +98,13 @@ def adaptive_controller_output(_t, xc, uc, params):
     Bm = params["Bm"]
 
     # controller inputs
-    um = uc[0]
-    xp = uc[1]
-    xm = uc[2]
+    um = u_input[0]
+    xp = u_input[1]
+    xm = u_input[2]
     
     # controller state
-    Ad = xc[0]
-    Bd = xc[1]
+    Ad = x_state[0]
+    Bd = x_state[1]
 
     k = (Am-Ad)/Bd
     l = Bm/Bd
@@ -150,7 +145,7 @@ X0 = np.zeros((4, 1))
 X0[0] = 0 # state of plant
 X0[1] = 0 # state of ref_model
 X0[2] = 0 # state of controller
-X0[3] = b0*1000 # state of controller
+X0[3] = b0*100 # state of controller
 
 
 # set simulation duration and time steps
@@ -169,7 +164,7 @@ uc_vec[1, :] = uc_vec[0, :]
 
 plt.figure(figsize=(16,8))
 plt.plot(t_vec, uc_vec[0,:])
-plt.title(r'reference $u_m$')
+plt.title(r'Anregungssignal / Referenzsignal $u_m$')
 plt.show()
 
 # simulate the system, with different gammas
@@ -185,13 +180,13 @@ plt.plot(tout2, yout2[0,:], label=r'$y_{\gamma = 1.0}$')
 plt.plot(tout2, yout2[0,:], label=r'$y_{\gamma = 5.0}$')
 plt.plot(tout1, yout1[1,:] ,label=r'$y_{m}$', linestyle='--')
 plt.legend()
-plt.title('system response $y_p, (y_m)$')
+plt.title('Systemantworten $y_p, (y_m)$')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[2,:], label=r'$u$')
 plt.plot(tout2, yout2[2,:], label=r'$u$')
 plt.plot(tout3, yout3[2,:], label=r'$u$')
 plt.legend(loc=4)
-plt.title(r'control $u_p$')
+plt.title(r'Regler $u_p$')
 plt.show()
 
 plt.figure(figsize=(16,8))
@@ -199,16 +194,14 @@ plt.subplot(2,1,1)
 plt.plot(tout1, yout1[5,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[5,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[5,:], label=r'$\gamma = 5.0$')
-plt.hlines(Ap, 0, Tend, label=r'$A_p$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'system parameter $\hat{A}$')
+plt.title(r'Systemparameter $\hat{A}$')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[6,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[6,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[6,:], label=r'$\gamma = 5.0$')
-plt.hlines(Bp, 0, Tend, label=r'$B_p$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'system parameter $\hat{B}$')
+plt.title(r'Systemparameter $\hat{B}$')
 plt.show()
 
 plt.figure(figsize=(16,8))
@@ -218,12 +211,12 @@ plt.plot(tout2, yout2[4,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[4,:], label=r'$\gamma = 5.0$')
 plt.hlines(k_star, 0, Tend, label=r'$k^{\ast}$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'control gain $k$')
+plt.title(r'Reglerparameter $k$')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[3,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[3,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[3,:], label=r'$\gamma = 5.0$')
 plt.hlines(l_star, 0, Tend, label=r'$l^{\ast}$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'control gain $l$')
+plt.title(r'Reglerparameter $l$')
 plt.show()

@@ -116,7 +116,7 @@ io_controller = ct.NonlinearIOSystem(
 
 # Overall closed loop system
 io_closed = ct.InterconnectedSystem(
-    [io_plant, io_ref_model, io_controller],
+    (io_plant, io_ref_model, io_controller),
     connections=[
         ['plant.u', 'control.u'],
         ['control.xm', 'ref_model.xm'],
