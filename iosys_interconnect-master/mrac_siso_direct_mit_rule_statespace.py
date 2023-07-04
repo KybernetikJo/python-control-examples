@@ -1,13 +1,13 @@
 # mrac_siso_direct_mit_rule_statespace.py
-# June 2023
+# Johannes Kaisinger, June 2023
 #
-# Demonstrate a MRAC example for a siso plant using "MIT rule"
-# Based on [1] Ex 5.2, Fig 5.5 & 5.6
-# Notation as in [2]
+# Demonstrate a MRAC example for a siso plant using "MIT rule".
+# Based on [1] Ex 5.2, Fig 5.5 & 5.6.
+# Notation as in [2].
 #
-# [1] K. J. Aström & B. Wittenmark "Adaptive Control"  Second Edition, 2008
+# [1] K. J. Aström & B. Wittenmark "Adaptive Control" Second Edition, 2008.
 #
-# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018
+# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018.
 
 import numpy as np
 import scipy.signal as signal
@@ -21,15 +21,8 @@ B = 0.5
 C = 1
 D = 0
 
-G_plant_ss = ct.StateSpace(A,B,C,D)
-
-io_plant = ct.LinearIOSystem(
-    G_plant_ss,
-    inputs=('u'),
-    outputs=('x'),
-    states=('x'),
-    name='plant'
-)
+io_plant = ct.ss(A, B, C, D,
+                 inputs=('u'), outputs=('x'), states=('x'), name='plant')
 
 # Reference model as linear state-space system
 Am = -2
@@ -37,15 +30,8 @@ Bm = 2
 Cm = 1
 Dm = 0
 
-G_model_ss = ct.StateSpace(Am,Bm,Cm,Dm)
-
-io_ref_model = ct.LinearIOSystem(
-    G_model_ss,
-    inputs=('r'),
-    outputs=('xm'),
-    states=('xm'),
-    name='ref_model'
-)
+io_ref_model = ct.ss(Am, Bm, Cm, Dm,
+                     inputs=('r'), outputs=('xm'), states=('xm'), name='ref_model')
 
 # Adaptive control law, u = kx*x + kr*r
 kr_star = (Bm)/B
@@ -103,7 +89,7 @@ def adaptive_controller_output(t, xc, uc, params):
 
 params={"gam":1, "Am":Am, "Bm":Bm, "signb":np.sign(B)}
 
-io_controller = ct.NonlinearIOSystem(
+io_controller = ct.nlsys(
     adaptive_controller_state,
     adaptive_controller_output,
     inputs=('r', 'xm', 'x'),
@@ -115,8 +101,8 @@ io_controller = ct.NonlinearIOSystem(
 )
 
 # Overall closed loop system
-io_closed = ct.InterconnectedSystem(
-    (io_plant, io_ref_model, io_controller),
+io_closed = ct.interconnect(
+    [io_plant, io_ref_model, io_controller],
     connections=[
         ['plant.u', 'control.u'],
         ['control.xm', 'ref_model.xm'],
