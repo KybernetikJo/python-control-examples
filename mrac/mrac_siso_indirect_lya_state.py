@@ -55,7 +55,7 @@ kr_star = Bm/B
 print(f'{kx_star = }')
 print(f'{kr_star = }')
 
-def adaptive_controller_state(_t, xc, uc, params):
+def adaptive_controller_state(t, xc, uc, params):
     """Internal state of adaptive controller, f(t,x,u;p)"""
     
     # Parameters
@@ -99,7 +99,7 @@ def adaptive_controller_state(_t, xc, uc, params):
     
     return [d_x1, d_x2]
 
-def adaptive_controller_output(_t, xc, uc, params):
+def adaptive_controller_output(t, xc, uc, params):
     """Algebraic output from adaptive controller, g(t,x,u;p)"""
     
     # Parameters
