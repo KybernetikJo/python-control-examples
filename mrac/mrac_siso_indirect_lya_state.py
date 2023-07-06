@@ -1,7 +1,13 @@
-# mrac_siso_direct_mit_rule_statespace.py
+# mrac_siso_indirect_lya_rule_statespace.py
 # Johannes Kaisinger, June 2023
 #
-# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018
+# Demonstrate a indirect MRAC example for a SISO plant using Lyapunov rule.
+# Notation as in [2].
+#
+# [1] K. J. Aström & B. Wittenmark "Adaptive Control" Second Edition, 2008.
+#
+# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018.
+
 
 import numpy as np
 import scipy.signal as signal
@@ -11,19 +17,19 @@ plt.style.use('ggplot')
 import control as ct
 
 # linear system
-Ap = 1.
-Bp = 2.
-Cp = 1.
-Dp = 0.
+A = 1.
+B = 3.
+C = 1.
+D = 0.
 
-G_plant_ss = ct.StateSpace(Ap,Bp,Cp,Dp)
+G_plant_ss = ct.StateSpace(A,B,C,D)
 
 # io_plant_model
 io_plant = ct.LinearIOSystem(
     G_plant_ss,
-    inputs=('up'),
-    outputs=('xp'),
-    states=('xp'),
+    inputs=('u'),
+    outputs=('x'),
+    states=('x'),
     name='plant'
 )
 
@@ -38,56 +44,54 @@ G_model_ss = ct.StateSpace(Am,Bm,Cm,Dm)
 # io_ref_model
 io_ref_model = ct.LinearIOSystem(
     G_model_ss,
-    inputs=('um'),
+    inputs=('r'),
     outputs=('xm'),
     states=('xm'),
     name='ref_model'
 )
 
-k_star = (Am - Ap)/Bp
-l_star = Bm/Bp
-print(f'{k_star = }')
-print(f'{l_star = }')
+kx_star = (Am - A)/B
+kr_star = Bm/B
+print(f'{kx_star = }')
+print(f'{kr_star = }')
 
-def adaptive_controller_state(_t, xc, uc, params):
-    """Internal state of adpative controller, f(t,x,u;p)"""
+def adaptive_controller_state(t, xc, uc, params):
+    """Internal state of adaptive controller, f(t,x,u;p)"""
     
-    # parameters
+    # Parameters
     gam_a = params["gam_a"]
     gam_b = params["gam_b"]
     Am = params["Am"]
     Bm = params["Bm"]
-    signb = params["signb"]
+    signB = params["signB"]
     b0 = params["b0"]
     
-    #print(gam1, gam2, Am, Bm)
-    
-    # controller inputs
-    um = uc[0]
-    xp = uc[1]
+    # Controller inputs
+    r = uc[0]
+    x = uc[1]
     xm = uc[2]
     
-    e1 = xm - xp
+    e1 = xm - x
 
-    # controller state
+    # Algebraic relationships
     Ad = x1 = xc[0] # Ad
     Bd = x2 = xc[1] # Bd
     
-    # dynamics xd = f(x,u)
-    d_x1 = - gam_a*e1*xp
+    # Controller dynamics
+    d_x1 = - gam_a*e1*x
     if (np.abs(Bd) > b0):
-        k = (Am-Ad)/Bd
-        l = Bm/Bd
-        # control law
-        up = k*xp + l*um
-        d_x2 = - gam_b*e1*up
+        kx = (Am-Ad)/Bd
+        kr = Bm/Bd
+        # Control law
+        u = kx*x + kr*r
+        d_x2 = - gam_b*e1*u
     elif (np.abs(Bd) == b0):
-        k = (Am-Ad)/Bd
-        l = Bm/Bd
-        # control law
-        up = k*xp + l*um
-        if (gam_b*e1*up*signb >= 0):
-            d_x2 = - gam_b*e1*up
+        kx = (Am-Ad)/Bd
+        kr = Bm/Bd
+        # Control law
+        up = kx*x + kr*r
+        if (gam_b*e1*up*signB >= 0):
+            d_x2 = - gam_b*e1*u
         else:
             d_x2 = 0
     else:
@@ -95,38 +99,39 @@ def adaptive_controller_state(_t, xc, uc, params):
     
     return [d_x1, d_x2]
 
-def adaptive_controller_output(_t, xc, uc, params):
+def adaptive_controller_output(t, xc, uc, params):
     """Algebraic output from adaptive controller, g(t,x,u;p)"""
     
-    # parameters
+    # Parameters
     Am = params["Am"]
     Bm = params["Bm"]
 
-    # controller inputs
-    um = uc[0]
-    xp = uc[1]
-    xm = uc[2]
+    # Controller inputs
+    r = uc[0]
+    xm = uc[1]
+    x = uc[2]
     
-    # controller state
+    # Plant parameter estimates
     Ad = xc[0]
     Bd = xc[1]
 
-    k = (Am-Ad)/Bd
-    l = Bm/Bd
+    # Controller state
+    kx = (Am-Ad)/Bd
+    kr = Bm/Bd
 
-    # control law
-    up = k*xp + l*um
+    # Control law
+    u = kx*x + kr*r
 
-    return [up, l, k, Ad, Bd]
+    return [u, kr, kx, Ad, Bd]
 
 b0=1e-3
-params={"gam_a":1., "gam_b":1., "Am":Am, "Bm":Bm, "signb":np.sign(Bp), "b0":b0}
+params={"gam_a":1., "gam_b":1., "Am":Am, "Bm":Bm, "signB":np.sign(B), "b0":b0}
 
 io_controller = ct.NonlinearIOSystem(
     adaptive_controller_state,
     adaptive_controller_output,
-    inputs=3,
-    outputs=('up', 'l', 'k', 'Ad', 'Bd'),
+    inputs=('r', 'xm', 'x'),
+    outputs=('u', 'kr', 'kx', 'Ad', 'Bd'),
     states=2,
     params=params,
     name='control',
@@ -136,47 +141,46 @@ io_controller = ct.NonlinearIOSystem(
 io_closed = ct.InterconnectedSystem(
     [io_plant, io_ref_model, io_controller],
     connections=[
-        ['plant.up', 'control.up'],
-        ['control.u[1]', 'plant.xp'],
-        ['control.u[2]', 'ref_model.xm']
+        ['plant.u', 'control.u'],
+        ['control.xm', 'ref_model.xm'],
+        ['control.x', 'plant.x'],
     ],
-    inplist=['control.u[0]', 'ref_model.um'],
-    outlist=['plant.xp', 'ref_model.xm', 'control.up', 'control.l', 'control.k', 'control.Ad', 'control.Bd'],
+    inplist=['control.r', 'ref_model.r'],
+    outlist=['plant.x', 'ref_model.xm', 'control.u', 'control.kr', 'control.kx', 'control.Ad', 'control.Bd'],
     dt=0
 )
 
-# set initial conditions
-X0 = np.zeros((4, 1))
-X0[0] = 0 # state of plant
-X0[1] = 0 # state of ref_model
-X0[2] = 0 # state of controller
-X0[3] = b0*1000 # state of controller
-
-
-# set simulation duration and time steps
-n_steps = 1000
+# Set simulation duration and time steps
 Tend = 100
+dt = 0.1
 
-# define simulation time span 
-t_vec = np.linspace(0, Tend, n_steps)
-# define control input
-uc_vec = np.zeros((2, n_steps))
+# Define simulation time 
+t_vec = np.arange(0, Tend, dt)
+
+# Define control reference input
+r_vec = np.zeros((2, len(t_vec)))
 
 rect = signal.square(2 * np.pi * 0.05 * t_vec)
 sin = np.sin(2 * np.pi * 0.05 * t_vec) + np.sin(2 * np.pi * 0.5 * t_vec)
-uc_vec[0, :] = rect
-uc_vec[1, :] = uc_vec[0, :]
+r_vec[0, :] = rect
+r_vec[1, :] = r_vec[0, :]
 
 plt.figure(figsize=(16,8))
-plt.plot(t_vec, uc_vec[0,:])
-plt.title(r'reference $u_m$')
+plt.plot(t_vec, r_vec[0,:])
+plt.title(r'reference input $r$')
 plt.show()
 
-# simulate the system, with different gammas
+# Set initial conditions, io_closed
+X0 = np.zeros((4, 1))
+X0[0] = 0 # state of plant, (x)
+X0[1] = 0 # state of ref_model, (xm)
+X0[2] = 0 # state of controller, (kr)
+X0[3] = b0*1000 # state of controller, (kx)
 
-tout1, yout1 = ct.input_output_response(io_closed, t_vec, uc_vec, X0, params={"gam_a":0.2, "gam_b":0.2})
-tout2, yout2 = ct.input_output_response(io_closed, t_vec, uc_vec, X0, params={"gam_a":1.0, "gam_b":1.0})
-tout3, yout3 = ct.input_output_response(io_closed, t_vec, uc_vec, X0, params={"gam_a":5.0, "gam_b":5.0})
+# Simulate the system with different gammas
+tout1, yout1 = ct.input_output_response(io_closed, t_vec, r_vec, X0, params={"gam_a":0.2, "gam_b":0.2})
+tout2, yout2 = ct.input_output_response(io_closed, t_vec, r_vec, X0, params={"gam_a":1.0, "gam_b":1.0})
+tout3, yout3 = ct.input_output_response(io_closed, t_vec, r_vec, X0, params={"gam_a":5.0, "gam_b":5.0})
 
 plt.figure(figsize=(16,8))
 plt.subplot(2,1,1)
@@ -185,13 +189,13 @@ plt.plot(tout2, yout2[0,:], label=r'$y_{\gamma = 1.0}$')
 plt.plot(tout2, yout2[0,:], label=r'$y_{\gamma = 5.0}$')
 plt.plot(tout1, yout1[1,:] ,label=r'$y_{m}$', linestyle='--')
 plt.legend()
-plt.title('system response $y_p, (y_m)$')
+plt.title('system response $x, (x_m)$')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[2,:], label=r'$u$')
 plt.plot(tout2, yout2[2,:], label=r'$u$')
 plt.plot(tout3, yout3[2,:], label=r'$u$')
 plt.legend(loc=4)
-plt.title(r'control $u_p$')
+plt.title(r'control $u$')
 plt.show()
 
 plt.figure(figsize=(16,8))
@@ -199,14 +203,14 @@ plt.subplot(2,1,1)
 plt.plot(tout1, yout1[5,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[5,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[5,:], label=r'$\gamma = 5.0$')
-plt.hlines(Ap, 0, Tend, label=r'$A_p$', color='black', linestyle='--')
+plt.hlines(A, 0, Tend, label=r'$A$', color='black', linestyle='--')
 plt.legend(loc=4)
 plt.title(r'system parameter $\hat{A}$')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[6,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[6,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[6,:], label=r'$\gamma = 5.0$')
-plt.hlines(Bp, 0, Tend, label=r'$B_p$', color='black', linestyle='--')
+plt.hlines(B, 0, Tend, label=r'$B$', color='black', linestyle='--')
 plt.legend(loc=4)
 plt.title(r'system parameter $\hat{B}$')
 plt.show()
@@ -216,14 +220,14 @@ plt.subplot(2,1,1)
 plt.plot(tout1, yout1[4,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[4,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[4,:], label=r'$\gamma = 5.0$')
-plt.hlines(k_star, 0, Tend, label=r'$k^{\ast}$', color='black', linestyle='--')
+plt.hlines(kx_star, 0, Tend, label=r'$k_x^{\ast}$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'control gain $k$')
+plt.title(r'control gain $k_x$ (feedback)')
 plt.subplot(2,1,2)
 plt.plot(tout1, yout1[3,:], label=r'$\gamma = 0.2$')
 plt.plot(tout2, yout2[3,:], label=r'$\gamma = 1.0$')
 plt.plot(tout3, yout3[3,:], label=r'$\gamma = 5.0$')
-plt.hlines(l_star, 0, Tend, label=r'$l^{\ast}$', color='black', linestyle='--')
+plt.hlines(kr_star, 0, Tend, label=r'$k_r^{\ast}$', color='black', linestyle='--')
 plt.legend(loc=4)
-plt.title(r'control gain $l$')
+plt.title(r'control gain $k_r$ (feedforward)')
 plt.show()

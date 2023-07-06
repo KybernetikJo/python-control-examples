@@ -1,13 +1,13 @@
 # mrac_siso_direct_mit_rule_statespace.py
-# June 2023
+# Johannes Kaisinger, June 2023
 #
-# Demonstrate a MRAC example for a siso plant using "MIT rule"
-# Based on [1] Ex 5.2, Fig 5.5 & 5.6
-# Notation as in [2]
+# Demonstrate a MRAC example for a siso plant using "MIT rule".
+# Based on [1] Ex 5.2, Fig 5.5 & 5.6.
+# Notation as in [2].
 #
-# [1] K. J. Aström & B. Wittenmark "Adaptive Control"  Second Edition, 2008
+# [1] K. J. Aström & B. Wittenmark "Adaptive Control" Second Edition, 2008.
 #
-# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018
+# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018.
 
 import numpy as np
 import scipy.signal as signal
@@ -60,7 +60,7 @@ def adaptive_controller_state(t, xc, uc, params):
     gam = params["gam"]
     Am = params["Am"]
     Bm = params["Bm"]
-    signb = params["signb"]
+    signB = params["signB"]
 
     # Controller inputs
     r = uc[0]
@@ -78,9 +78,9 @@ def adaptive_controller_state(t, xc, uc, params):
 
     # Controller dynamics
     d_x1 = Am*x1 + Am*r
-    d_x2 = - gam*x1*e*signb
+    d_x2 = - gam*x1*e*signB
     d_x3 = Am*x3 + Am*x
-    d_x4 = - gam*x3*e*signb
+    d_x4 = - gam*x3*e*signB
 
     return [d_x1, d_x2, d_x3, d_x4]
 
@@ -101,7 +101,7 @@ def adaptive_controller_output(t, xc, uc, params):
 
     return [u]
 
-params={"gam":1, "Am":Am, "Bm":Bm, "signb":np.sign(B)}
+params={"gam":1, "Am":Am, "Bm":Bm, "signB":np.sign(B)}
 
 io_controller = ct.NonlinearIOSystem(
     adaptive_controller_state,
