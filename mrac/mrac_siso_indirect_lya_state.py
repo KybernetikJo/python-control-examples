@@ -108,8 +108,8 @@ def adaptive_controller_output(_t, xc, uc, params):
 
     # Controller inputs
     r = uc[0]
-    x = uc[1]
-    xm = uc[2]
+    xm = uc[1]
+    x = uc[2]
     
     # Plant parameter estimates
     Ad = xc[0]
@@ -130,7 +130,7 @@ params={"gam_a":1., "gam_b":1., "Am":Am, "Bm":Bm, "signB":np.sign(B), "b0":b0}
 io_controller = ct.NonlinearIOSystem(
     adaptive_controller_state,
     adaptive_controller_output,
-    inputs=('r', 'x', 'xm'),
+    inputs=('r', 'xm', 'x'),
     outputs=('u', 'kr', 'kx', 'Ad', 'Bd'),
     states=2,
     params=params,
@@ -142,8 +142,8 @@ io_closed = ct.InterconnectedSystem(
     [io_plant, io_ref_model, io_controller],
     connections=[
         ['plant.u', 'control.u'],
+        ['control.xm', 'ref_model.xm'],
         ['control.x', 'plant.x'],
-        ['control.xm', 'ref_model.xm']
     ],
     inplist=['control.r', 'ref_model.r'],
     outlist=['plant.x', 'ref_model.xm', 'control.u', 'control.kr', 'control.kx', 'control.Ad', 'control.Bd'],

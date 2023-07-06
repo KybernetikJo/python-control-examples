@@ -1,13 +1,13 @@
 # mrac_siso_direct_lya_rule_statespace.py
-# June 2023
+# Johannes Kaisinger, June 2023
 #
-# Demonstrate a MRAC example for a siso plant using "LYAPUNOV rule"
-# Based on [1] Ex 5.7, Fig 5.12 & 5.13
-# Notation as in [2]
+# Demonstrate a MRAC example for a siso plant using "LYAPUNOV rule".
+# Based on [1] Ex 5.7, Fig 5.12 & 5.13.
+# Notation as in [2].
 #
-# [1] K. J. Aström & B. Wittenmark "Adaptive Control"  Second Edition, 2008
+# [1] K. J. Aström & B. Wittenmark "Adaptive Control" Second Edition, 2008.
 #
-# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018
+# [2] Nhan T. Nguyen "Model-Reference Adaptive Control", 2018.
 
 import numpy as np
 import scipy.signal as signal
@@ -53,7 +53,7 @@ print(f"Optimal value for {kr_star = }")
 kx_star = (Am-A)/B
 print(f"Optimal value for {kx_star = }")
 
-def adaptive_controller_state(_t, xc, uc, params):
+def adaptive_controller_state(t, xc, uc, params):
     """Internal state of adaptive controller, f(t,x,u;p)"""
     
     # Parameters
@@ -78,7 +78,7 @@ def adaptive_controller_state(_t, xc, uc, params):
     
     return [d_x1, d_x2]
 
-def adaptive_controller_output(_t, xc, uc, params):
+def adaptive_controller_output(t, xc, uc, params):
     """Algebraic output from adaptive controller, g(t,x,u;p)"""
 
     # Controller inputs
