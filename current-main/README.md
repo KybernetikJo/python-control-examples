@@ -1,16 +1,15 @@
-# Tracks Main
+# Folows main branch
 
-This folder tracks the main branch of `python-control`. (Currently `Main / 0.9.5 / 0.10.0`)
+This folder follows the main branch of `python-control`. (Currently `Main / 0.9.5 / 0.10.0`)
 
-## Current Focus: 
+## Current focus: 
 - New I/O system
-- New Plotting paradigm
+- New plotting paradigm
 
 ### New I/O system
 
-`python-control` has an rich interconnection system. This interconnection system is very useful to build block-diagram oriented control systems.
+`python-control` has an rich interconnection system. This interconnection system is very useful to build block-diagram oriented control systems. 
 
-## 
 - append
 - connect
 - feedback
