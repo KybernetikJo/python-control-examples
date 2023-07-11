@@ -6,4 +6,4 @@ Some python-control examples. This repo follows the concept of
 - stable (current stable, v0.9.4)
 - oldstable (current old stable, v0.9.3)
 
-When there is a new stable verion, unstable will move to stable and stable to oldstable.
+When there is a new stable version, unstable will move to stable and stable to oldstable.
