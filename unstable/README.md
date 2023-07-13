@@ -1,6 +1,6 @@
-# Folows main branch
+# Tracks main branch
 
-This folder follows the main branch of `python-control`. (Currently `Main / 0.9.5 / 0.10.0`)
+This folder tracks the main branch of `python-control`. (Currently `Main / 0.9.5 / 0.10.0`)
 
 ## Current focus: 
 - New I/O system
